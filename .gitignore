@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vercel/
+.env
+.env.*
+!.env.example
+*.apk
+*.aab
+*.p12
+*.keystore
+*.jks
+*private*.json
+.qa-secrets.json
+signing/
+android/assets/
+android/build/

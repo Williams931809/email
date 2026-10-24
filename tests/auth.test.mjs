@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {token,digest,equal,passwordHash,validPassword,email} from '../backend/crypto.mjs';
+test('password hashes are salted and incorrect passwords fail',async()=>{const a=await passwordHash('a-long-example-password','salt-a');const b=await passwordHash('a-long-example-password','salt-b');assert.notEqual(a,b);assert.equal(a.length,64);assert.ok(equal(a,await passwordHash('a-long-example-password','salt-a')));assert.ok(!equal(a,await passwordHash('wrong-password','salt-a')));});
+test('session tokens have entropy and only digests are persisted',async()=>{const a=token();assert.equal(a.length,64);assert.notEqual(a,token());assert.notEqual(a,await digest(a));assert.equal((await digest(a)).length,64);assert.equal(equal('abc','abcd'),false);});
+test('credentials are validated and emails normalized',()=>{assert.equal(validPassword('short'),false);assert.equal(validPassword('x'.repeat(129)),false);assert.equal(validPassword('long-enough-password'),true);assert.equal(email(' User@Example.com '),'user@example.com');assert.equal(email('invalid'),null);});
