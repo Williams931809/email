@@ -10,3 +10,6 @@
 @media(prefers-reduced-motion:reduce){.designed-template{transition:none}.designed-template:hover{transform:none}}
 
 .template-sample-note{font-size:10px;line-height:1.7;color:#7a8670;margin-top:12px}
+
+/* App wordmark */
+.app-brand-name{display:flex;flex-direction:column;gap:2px;font-size:23px;line-height:1.05;letter-spacing:-.7px;color:inherit}.app-brand-name small{display:block;font:600 12px/1.2 Manrope,Arial,sans-serif;letter-spacing:1.1px;color:inherit;margin:0}.brand-icon{flex-shrink:0}.brand .app-brand-name{min-width:0}

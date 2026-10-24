@@ -1,4 +1,4 @@
-# Mailroom Company
+# Hamthe Mail Room
 
 Private company email marketing workspace with independent email/password accounts, contacts, tags, CSV import/export, campaign drafts, templates, previews, sequence plans, backups and admin-managed team invitations.
 
@@ -6,7 +6,7 @@ Email delivery, scheduling and automatic sequence execution are not implemented 
 
 ## Email template collection
 
-The Templates screen includes 12 curated designs across six layouts: welcome, two newsletters, launch, promotion, event invitation, property showcase, thank-you, reconnect, seasonal, internal update, and milestone. Search or filter the collection and preview designs at desktop or mobile widths. Choose a template to start a draft; edit the accent color, small heading, main headline, message, and button destination in the campaign editor.
+The Hamthe Mail Room Templates screen includes 12 curated designs across six layouts: welcome, two newsletters, launch, promotion, event invitation, property showcase, thank-you, reconnect, seasonal, internal update, and milestone. Search or filter the collection and preview designs at desktop or mobile widths. Choose a template to start a draft; edit the accent color, small heading, main headline, message, and button destination in the campaign editor.
 
 Design settings are stored with each draft and used by the HTML preview export. Existing drafts without design settings remain supported. Template text is sample copy to replace before use. The renderer escapes editable content and permits only HTTP/HTTPS button destinations. Previews use the sample recipient Alex. Email-client rendering has not been tested in Outlook/Gmail devices; live delivery is still unavailable.
 
