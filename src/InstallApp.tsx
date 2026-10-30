@@ -1,0 +1,7 @@
+import {useEffect,useState} from 'react';
+import {Download} from 'lucide-react';
+type InstallPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>};
+export function InstallApp(){const [prompt,setPrompt]=useState<InstallPrompt|null>(null),[installed,setInstalled]=useState(()=>window.matchMedia('(display-mode: standalone)').matches),[help,setHelp]=useState(false);
+useEffect(()=>{const available=(e:Event)=>{e.preventDefault();setPrompt(e as InstallPrompt);};const done=()=>{setInstalled(true);setPrompt(null);setHelp(false);};window.addEventListener('beforeinstallprompt',available);window.addEventListener('appinstalled',done);return()=>{window.removeEventListener('beforeinstallprompt',available);window.removeEventListener('appinstalled',done);};},[]);
+if(installed)return null;return <div className="install-control"><button className="text-button" onClick={async()=>{if(!prompt){setHelp(!help);return;}await prompt.prompt();if((await prompt.userChoice).outcome==='accepted')setPrompt(null);}}><Download size={14}/>Install app</button>{help&&<div className="install-help" role="status">In your browser menu choose <strong>Install app</strong> or <strong>Add to Home Screen</strong>. On iPhone Safari, use Share → Add to Home Screen. Internet is required for account access and email delivery.<button className="text-button" onClick={()=>setHelp(false)}>Close</button></div>}</div>;
+}

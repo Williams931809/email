@@ -1,3 +1,4 @@
+import {deliveryAction,DeliveryError,suppressedWorkspace} from './delivery.ts';
 // Supabase Edge Function: no dependency on Supabase Auth or other app accounts.
 import {digest,equal,passwordHash,token,validPassword,email} from './crypto.mjs';
 const DB_URL=Deno.env.get('SUPABASE_URL')!;
@@ -55,15 +56,17 @@ Deno.serve(async(req:Request)=>{
    const found=await db('mr2_invites?token_hash=eq.'+await digest(b.token)+'&used=eq.false&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&select=email,role,kind');if(!found?.[0])fail(404,'This invitation has expired or was already used.');return ok(found[0]);
   }
   if(!current)fail(401,'Please sign in to continue.');
+  const delivery=await deliveryAction(input,{db,current,secret:SERVICE_KEY,baseUrl:DB_URL+'/functions/v1/mailroom-delivery',limit});if(delivery!==undefined)return ok(delivery);
   if(path==='auth/password'&&method==='POST'){
    await limit('password:'+current.id,8);if(typeof b.oldPassword!=='string'||b.oldPassword.length>128||!equal(await passwordHash(b.oldPassword,current.salt),current.password_hash))fail(401,'Your current password is incorrect.');if(!validPassword(b.password))fail(400,'Use a password between 12 and 128 characters.');
    const salt=token(24),secret=token();await db('rpc/mr2_password','POST',{p_user:current.id,p_hash:await passwordHash(b.password,salt),p_salt:salt,p_session:await digest(secret)});return ok({ok:true,__session:secret});
   }
-  if(path==='workspace'&&method==='GET'){const rows=await db('mr2_config?id=eq.1&select=data,version');return ok(rows[0]);}
+  if(path==='workspace'&&method==='GET'){const rows=await db('mr2_config?id=eq.1&select=data,version');return ok({...rows[0],data:await suppressedWorkspace(db,rows[0].data)});}
   if(path==='workspace'&&method==='PUT'){
    const {data,version}=b;if(!Number.isSafeInteger(version)||!validWorkspace(data)||JSON.stringify(data).length>2000000)fail(400,'Invalid workspace. Check contact emails and record limits.');
    if(current.role!=='admin'){const previous=await db('mr2_config?id=eq.1&select=data');if(JSON.stringify(previous[0].data?.settings)!==JSON.stringify(data.settings))fail(403,'Only an admin can change company settings.');}
-   const changed=await db('mr2_config?id=eq.1&version=eq.'+version,'PATCH',{data,version:version+1});if(!changed?.[0])fail(409,'Someone else saved changes. Download a backup, reload the workspace, and try again.');return ok({ok:true,version:version+1});
+   const protectedData=await suppressedWorkspace(db,data);
+   const changed=await db('mr2_config?id=eq.1&version=eq.'+version,'PATCH',{data:protectedData,version:version+1});if(!changed?.[0])fail(409,'Someone else saved changes. Download a backup, reload the workspace, and try again.');return ok({ok:true,version:version+1});
   }
   if(path.startsWith('team')){
    if(current.role!=='admin')fail(403,'Only an admin can manage company access.');
@@ -80,5 +83,6 @@ Deno.serve(async(req:Request)=>{
    }
   }
   fail(404,'This action is not available.');
- }catch(e){return Response.json({error:e instanceof HttpError?e.message:'Something went wrong. Please retry.'},{status:e instanceof HttpError?e.status:500,headers:{'Cache-Control':'no-store'}});}
+ }catch(e){return Response.json({error:e instanceof HttpError||e instanceof DeliveryError?e.message:'Something went wrong. Please retry.'},{status:e instanceof HttpError||e instanceof DeliveryError?e.status:500,headers:{'Cache-Control':'no-store'}});}
 });
+

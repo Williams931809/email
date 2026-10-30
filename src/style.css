@@ -13,3 +13,8 @@
 
 /* App wordmark */
 .app-brand-name{display:flex;flex-direction:column;gap:2px;font-size:23px;line-height:1.05;letter-spacing:-.7px;color:inherit}.app-brand-name small{display:block;font:600 12px/1.2 Manrope,Arial,sans-serif;letter-spacing:1.1px;color:inherit;margin:0}.brand-icon{flex-shrink:0}.brand .app-brand-name{min-width:0}
+
+
+.delivery-checks{display:grid;gap:12px;margin:20px 0}.delivery-checks>span{display:flex;gap:9px;align-items:center;font-size:11px;line-height:1.6;color:#64765a}.delivery-checks svg{flex-shrink:0}.delivery-hint{font-size:11px;line-height:1.9;color:#7d886f;margin:16px 0}.settings-card .delivery-hint{font-size:11px;margin:16px 0}.settings-card .actions{flex-wrap:wrap;gap:9px}.settings-card .actions button{font-size:11px;padding:11px 13px}.settings-card form .secondary{font-size:11px}.send-panel>label{margin-top:18px}.send-panel>.secondary{margin-top:12px;font-size:10px}.send-panel .auth-error,.send-panel .notice{font-size:10px;margin:15px 0;padding:11px;line-height:1.8}.send-panel .send-check{line-height:1.7;align-items:flex-start}.sequence-delivery{max-width:730px;margin-top:22px}.sequence-delivery .notice,.sequence-delivery .auth-error{margin-top:16px}.table-scroll td{overflow-wrap:anywhere}input[type=datetime-local]{min-width:0;max-width:100%}
+
+.install-control{position:relative}.install-control>.text-button{font-size:10px;white-space:nowrap}.install-help{position:absolute;right:0;top:30px;z-index:25;width:260px;padding:18px;background:white;border:1px solid #dfe6d6;border-radius:9px;box-shadow:0 8px 35px #29391a20;font-size:11px;line-height:1.8;color:#637457}.install-help button{margin-top:12px}.header-right{gap:12px}

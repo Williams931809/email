@@ -1,0 +1,34 @@
+begin;
+do $$
+declare actor uuid=gen_random_uuid();run uuid=gen_random_uuid(); n integer; n2 integer; w jsonb;
+begin
+ insert into public.mr2_users(id,email,name,role,founder,active,password_hash,salt) values(actor,'qa-'||actor::text||'@example.invalid','QA','admin',false,true,'not-a-real-hash','not-a-real-salt');
+ w=jsonb_build_object('settings',jsonb_build_object('company','QA','from','qa@example.invalid','reply','','address','12 QA Road','color','#123456'),'contacts',jsonb_build_array(jsonb_build_object('id','a','email','a@example.invalid','name','A','status','Subscribed','tags','News'),jsonb_build_object('id','b','email','b@example.invalid','name','B','status','Unsubscribed','tags','News')),'campaigns',jsonb_build_array(jsonb_build_object('id','qa','name','QA campaign','subject','Hello','body','A test draft','segment','All subscribers','status','Draft','date','','preview','')),'sequences',jsonb_build_array(jsonb_build_object('id','seq-qa','name','QA sequence','trigger','New subscriber','steps',jsonb_build_array(jsonb_build_object('days',0,'subject','Step one','body','Hello'),jsonb_build_object('days',2,'subject','Step two','body','Follow-up')))));
+ update public.mr2_config set data=w where id=1;
+ update public.mr2_delivery_config set encrypted_key='SQL-test-only',verified_sender='qa@example.invalid',webhook_id=1,enabled=true,daily_limit=2 where id=1;
+ n=public.mr2_queue_campaign(run,'qa',now(),actor,false);
+ if n<>1 then raise exception 'Subscription filtering failed'; end if;
+ n2=public.mr2_queue_campaign(run,'qa',now(),actor,false);
+ if n2<>1 or (select count(*) from public.mr2_jobs where run_id=run)<>1 then raise exception 'Idempotency failed'; end if;
+ perform public.mr2_suppress('a@example.invalid','unsubscribed');
+ if (select status from public.mr2_jobs where run_id=run)<>'skipped' then raise exception 'Suppression did not stop queued email'; end if;
+ insert into public.mr2_automations(sequence_id,enabled,created_by,definition,identity) values('seq-qa',true,actor,w->'sequences'->0,w->'settings');
+ n=public.mr2_enroll_sequence('seq-qa',true,false);
+ if n<>0 then raise exception 'Baseline sent existing contacts'; end if;
+ w=jsonb_set(w,'{contacts}',(w->'contacts')||jsonb_build_array(jsonb_build_object('id','c','email','c@example.invalid','name','C','status','Subscribed','tags','News')));
+ update public.mr2_config set data=w where id=1;
+ n=public.mr2_enroll_sequence('seq-qa',false,false);
+ if n<>1 then raise exception 'New subscriber enrollment failed'; end if;
+ if public.mr2_enroll_sequence('seq-qa',false,false)<>0 then raise exception 'Duplicate enrollment'; end if;
+ if (select count(*) from public.mr2_jobs where sequence_id='seq-qa')<>2 then raise exception 'Sequence steps missing'; end if;
+ if not exists(select 1 from public.mr2_jobs where sequence_id='seq-qa' and step=1 and due_at>now()+interval '47 hours') then raise exception 'Sequence delay failed'; end if;
+ insert into public.mr2_daily(day,reserved) values((now() at time zone 'UTC')::date,1) on conflict(day) do update set reserved=1;
+ select count(*) into n from public.mr2_claim_jobs();
+ if n<>1 or (select reserved from public.mr2_daily where day=(now() at time zone 'UTC')::date)<>2 then raise exception 'Daily cap failed'; end if;
+ if (select count(*) from public.mr2_claim_jobs())<>0 then raise exception 'Daily cap exceeded'; end if;
+ update public.mr2_jobs set claimed_at=now()-interval '10 minutes' where status='sending' and sequence_id='seq-qa';
+ perform public.mr2_claim_jobs();
+ if not exists(select 1 from public.mr2_jobs where sequence_id='seq-qa' and status='uncertain') then raise exception 'Ambiguous delivery could be retried'; end if;
+end $$;
+rollback;
+select 'Queue, suppression, idempotency, sequence enrollment, delays, daily cap and uncertain-delivery tests passed; rolled back.' as verification;
