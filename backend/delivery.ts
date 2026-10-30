@@ -18,7 +18,7 @@ export async function deliveryAction(input:any,ctx:Context):Promise<any>{
  const config=await cfg(db),w=await workspace(db);
  if(path==='delivery/status'&&method==='GET'){
   const today=new Date().toISOString().slice(0,10);const [daily,automations,totals]=await Promise.all([db('mr2_daily?day=eq.'+today+'&select=reserved'),db('mr2_automations?select=sequence_id,enabled'),db('rpc/mr2_delivery_totals','POST',{})]);
-  return {connected:!!config.encrypted_key,enabled:config.enabled,verifiedSender:config.verified_sender||'',senderReady:config.verified_sender===normalizeEmail(w.settings.from),dailyLimit:config.daily_limit,usedToday:daily[0]?.reserved||0,webhookReady:!!config.webhook_id,workerAt:config.last_worker_at,workerReady:!!config.worker_hash,error:current.role==='admin'?config.last_error:null,automations,totals};
+  return {connected:!!config.encrypted_key,enabled:config.enabled,verifiedSender:config.verified_sender||'',senderReady:Boolean(config.verified_sender&&config.verified_sender===normalizeEmail(w.settings.from)),dailyLimit:config.daily_limit,usedToday:daily[0]?.reserved||0,webhookReady:!!config.webhook_id,workerAt:config.last_worker_at,workerReady:!!config.worker_hash,error:current.role==='admin'?config.last_error:null,automations,totals};
  }
  if(current.role!=='admin')reject(403,'Only an admin can configure delivery or send emails.');
  if(path==='delivery/connect'&&method==='POST'){
@@ -105,7 +105,7 @@ export async function deliveryPublic(req:Request,db:DB,secret:string,baseUrl:str
   try{
    const latest=await cfg(db),s=await db('mr2_suppressions?email=eq.'+Q(job.email)+'&select=email');
    const run=(await db('mr2_runs?id=eq.'+job.run_id+'&select=test'))[0];
-   const contact=w.contacts.find((c:any)=>c.email.toLowerCase()===job.email);
+   const currentWorkspace=await workspace(db);const contact=currentWorkspace.contacts.find((c:any)=>c.email.toLowerCase()===job.email);
    if(!latest.enabled){patch={status:'pending',error:null};}
    else if(s.length||(!run?.test&&!eligible(contact))){patch={status:'skipped',error:'Recipient no longer subscribed'};}
    else if(latest.verified_sender!==normalizeEmail(job.identity.from)){patch={status:'failed',error:'The queued sender is no longer verified'};}
